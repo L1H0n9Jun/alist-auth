@@ -1,11 +1,10 @@
-package alist
+package ali_auth
 
 import (
 	"fmt"
 	"strings"
 
-	"api.nn.ci/apps/common"
-	"api.nn.ci/utils"
+	"ali_openapi/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,7 +33,7 @@ func aliAccessToken(c *gin.Context) {
 	var req AliAccessTokenReq
 	err := c.ShouldBind(&req)
 	if err != nil {
-		common.ErrorJson(c, AliAccessTokenErr{
+		utils.ErrorJson(c, AliAccessTokenErr{
 			Code:    "InternalError",
 			Message: err.Error(),
 			Error:   err.Error(),
@@ -46,7 +45,7 @@ func aliAccessToken(c *gin.Context) {
 		req.ClientSecret = aliClientSecret
 	}
 	if req.GrantType != "authorization_code" && req.GrantType != "refresh_token" {
-		common.ErrorJson(c, AliAccessTokenErr{
+		utils.ErrorJson(c, AliAccessTokenErr{
 			Code:    "Invalid request",
 			Message: "Incorrect GrantType",
 			Error:   "Incorrect GrantType",
@@ -54,7 +53,7 @@ func aliAccessToken(c *gin.Context) {
 		return
 	}
 	if len(req.RefreshToken) == 32 {
-		common.ErrorJson(c, AliAccessTokenErr{
+		utils.ErrorJson(c, AliAccessTokenErr{
 			Code:    "Invalid request",
 			Message: "You should use the token that request with aliyundrive open insted of aliyundrive",
 			Error:   "You should use the token that request with aliyundrive open insted of aliyundrive",
@@ -62,7 +61,7 @@ func aliAccessToken(c *gin.Context) {
 		return
 	}
 	if req.GrantType == "authorization_code" && req.Code == "" {
-		common.ErrorJson(c, AliAccessTokenErr{
+		utils.ErrorJson(c, AliAccessTokenErr{
 			Code:    "Invalid request",
 			Message: "Code missed",
 			Error:   "Code missed",
@@ -70,7 +69,7 @@ func aliAccessToken(c *gin.Context) {
 		return
 	}
 	if req.GrantType == "refresh_token" && strings.Count(req.RefreshToken, ".") != 2 {
-		common.ErrorJson(c, AliAccessTokenErr{
+		utils.ErrorJson(c, AliAccessTokenErr{
 			Code:    "Invalid request",
 			Message: "Incorrect refresh_token or missed",
 			Error:   "Incorrect refresh_token or missed",
@@ -80,7 +79,7 @@ func aliAccessToken(c *gin.Context) {
 	var e AliAccessTokenErr
 	res, err := utils.RestyClient.R().SetBody(req).SetError(&e).Post("https://openapi.aliyundrive.com/oauth/access_token")
 	if err != nil {
-		common.ErrorJson(c, AliAccessTokenErr{
+		utils.ErrorJson(c, AliAccessTokenErr{
 			Code:    "InternalError",
 			Message: err.Error(),
 			Error:   err.Error(),
@@ -89,10 +88,10 @@ func aliAccessToken(c *gin.Context) {
 	}
 	if e.Code != "" {
 		e.Error = fmt.Sprintf("%s: %s", e.Code, e.Message)
-		common.ErrorJson(c, e, res.StatusCode())
+		utils.ErrorJson(c, e, res.StatusCode())
 		return
 	}
-	common.JsonBytes(c, res.Body())
+	utils.JsonBytes(c, res.Body())
 }
 
 type aliQrcodeReq struct {
@@ -134,5 +133,5 @@ func aliQrcode(c *gin.Context) {
 		c.JSON(res.StatusCode(), e)
 		return
 	}
-	common.JsonBytes(c, res.Body())
+	utils.JsonBytes(c, res.Body())
 }

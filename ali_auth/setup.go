@@ -1,4 +1,4 @@
-package alist
+package ali_auth
 
 import (
 	"os"
@@ -25,17 +25,10 @@ func initVar() {
 	// client
 	aliClientID = os.Getenv("ALI_DRIVE_CLIENT_ID")
 	aliClientSecret = os.Getenv("ALI_DRIVE_CLIENT_SECRET")
-	baiduClientId = os.Getenv("BAIDU_CLIENT_ID")
-	baiduClientSecret = os.Getenv("BAIDU_CLIENT_SECRET")
 }
 
 func Setup(g *gin.RouterGroup) {
 	initVar()
-	g.GET("/ali/qr", Qr)
-	g.POST("/ali/ck", Ck)
-	g.POST("/onedrive/get_refresh_token", onedriveToken)
-	g.POST("/onedrive/get_site_id", spSiteID)
-	g.GET("/baidu/get_refresh_token", baiduToken)
 	aliOpen := g.Group("/ali_open")
 	aliOpen.Any("/limit", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{
