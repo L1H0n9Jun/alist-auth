@@ -15,9 +15,9 @@ func initVar() {
 func Setup(g *gin.RouterGroup) {
 	initVar()
 	aliOpen := g.Group("/ali_open")
-	aliOpen.Any("/token", aliAccessToken)
-	aliOpen.Any("/refresh", aliAccessToken)
-	aliOpen.Any("/code", aliAccessToken)
-	aliOpen.Any("/qr", aliQrcode)
-	aliOpen.Any("/xbcloud", xbAccessToken)
+	aliOpen.POST("/token", aliAccessToken)
+	aliOpen.POST("/refresh", aliAccessToken)
+	aliOpen.POST("/code", aliAccessToken)
+	aliOpen.POST("/qr", aliQrcode)
+	aliOpen.POST("/xbcloud", xbAccessToken)
 }
