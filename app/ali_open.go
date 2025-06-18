@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -91,6 +92,99 @@ func aliAccessToken(c *gin.Context) {
 	JsonBytes(c, res.Bytes())
 }
 
+type xbTokenCamel struct {
+	Code         *string `json:"code"`
+	Message      *string `json:"message"`
+	TokenType    string  `json:"tokenType"`
+	AccessToken  string  `json:"accessToken"`
+	RefreshToken string  `json:"refreshToken"`
+	ExpiresIn    int     `json:"expiresIn"`
+}
+
+type xbTokenSnake struct {
+	Code         *string `json:"code"`
+	Message      *string `json:"message"`
+	TokenType    string  `json:"token_type"`
+	AccessToken  string  `json:"access_token"`
+	RefreshToken string  `json:"refresh_token"`
+	ExpiresIn    int     `json:"expires_in"`
+}
+
+func xbAccessToken(c *gin.Context) {
+	var req AliAccessTokenReq
+	err := c.ShouldBind(&req)
+	if err != nil {
+		ErrorJson(c, AliAccessTokenErr{
+			Code:    "InternalError",
+			Message: err.Error(),
+			Error:   err.Error(),
+		})
+		return
+	}
+	if req.GrantType != "refresh_token" {
+		ErrorJson(c, AliAccessTokenErr{
+			Code:    "Invalid request",
+			Message: "Incorrect GrantType",
+			Error:   "Incorrect GrantType",
+		}, 400)
+		return
+	}
+	if len(req.RefreshToken) == 32 {
+		ErrorJson(c, AliAccessTokenErr{
+			Code:    "Invalid request",
+			Message: "You should use the token that request with aliyundrive open insted of aliyundrive",
+			Error:   "You should use the token that request with aliyundrive open insted of aliyundrive",
+		}, 400)
+		return
+	}
+	if strings.Count(req.RefreshToken, ".") != 2 {
+		ErrorJson(c, AliAccessTokenErr{
+			Code:    "Invalid request",
+			Message: "Incorrect refresh_token or missed",
+			Error:   "Incorrect refresh_token or missed",
+		}, 400)
+		return
+	}
+	var e AliAccessTokenErr
+	res, err := RestyClient.R().
+		SetQueryParam("refreshToken", req.RefreshToken).
+		SetError(&e).
+		Get("http://www.xiaobaiyun.site/cloudisk/api/cloudpc/accessToken")
+	if err != nil {
+		ErrorJson(c, AliAccessTokenErr{
+			Code:    "InternalError",
+			Message: err.Error(),
+			Error:   err.Error(),
+		})
+		return
+	}
+	if e.Code != "" {
+		e.Error = fmt.Sprintf("%s: %s", e.Code, e.Message)
+		ErrorJson(c, e, res.StatusCode())
+		return
+	}
+	var resCam xbTokenCamel
+	if err := json.Unmarshal(res.Bytes(), &resCam); err != nil {
+		ErrorJson(c, AliAccessTokenErr{
+			Code:    "InternalError",
+			Message: "invalid response from upstream",
+			Error:   err.Error(),
+		})
+		return
+	}
+	resSna := xbTokenSnake(resCam)
+	resSnaJson, err := json.Marshal(resSna)
+	if err != nil {
+		ErrorJson(c, AliAccessTokenErr{
+			Code:    "InternalError",
+			Message: "marshal snake_case json failed",
+			Error:   err.Error(),
+		})
+		return
+	}
+	JsonBytes(c, resSnaJson)
+}
+
 type aliQrcodeReq struct {
 	ClientID     string   `json:"client_id"`
 	ClientSecret string   `json:"client_secret"`
@@ -112,7 +206,7 @@ func aliQrcode(c *gin.Context) {
 		req.ClientID = aliOpenClientID
 		req.ClientSecret = aliOpenClientSecret
 	}
-	if req.Scopes == nil || len(req.Scopes) == 0 {
+	if len(req.Scopes) == 0 {
 		req.Scopes = []string{"user:base", "file:all:read", "file:all:write"}
 	}
 	var e AliAccessTokenErr

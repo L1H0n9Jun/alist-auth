@@ -19,4 +19,5 @@ func Setup(g *gin.RouterGroup) {
 	aliOpen.Any("/refresh", aliAccessToken)
 	aliOpen.Any("/code", aliAccessToken)
 	aliOpen.Any("/qr", aliQrcode)
+	aliOpen.Any("/xbcloud", xbAccessToken)
 }
